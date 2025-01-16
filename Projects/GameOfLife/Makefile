@@ -15,22 +15,22 @@ PartB: imageloader.o gameoflife.o
 imageloader: imageloader.o imageloadertester.o
 	$(CC) $(LDFLAGS) -o imageloadertester imageloader.o imageloadertester.o
 	echo "Running imageloadertest"
-	./imageloadertester testInputs/JohnConway.ppm > studentOutputs/JohnConway.ppm
+	./imageloadertester.exe testInputs/JohnConway.ppm > studentOutputs/JohnConway.ppm
 	diff testInputs/JohnConway.ppm studentOutputs/JohnConway.ppm
 	echo "Diff check: The above lines were different than expected. If no lines show up, then this passed"
 
 imagememcheck: imageloader
 	echo "Running memory check on imageloadertest"
-	valgrind $(VGFLAGS) ./imageloadertester testInputs/JohnConway.ppm > studentOutputs/JohnConway.ppm
+	valgrind $(VGFLAGS) ./imageloadertester.exe testInputs/JohnConway.ppm > studentOutputs/JohnConway.ppm
 
 
 steganography: imageloader.o steganography.o
 	echo "Running steganography"
 	$(CC) $(LDFLAGS) -o steganography steganography.o imageloader.o
-	./steganography testInputs/JohnConway.ppm > studentOutputs/secretMessage.ppm
+	./steganography.exe testInputs/JohnConway.ppm > studentOutputs/secretMessage.ppm
 
 steganographymemcheck:  steganography
-	valgrind $(VGFLAGS) ./steganography testInputs/JohnConway.ppm > studentOutputs/secretMessage.ppm
+	valgrind $(VGFLAGS) ./steganography.exe testInputs/JohnConway.ppm > studentOutputs/secretMessage.ppm
 
 gameoflife: imageloader.o gameoflife.o
 	$(CC) $(LDFLAGS) -o gameOfLife gameoflife.o imageloader.o
@@ -38,7 +38,7 @@ gameoflife: imageloader.o gameoflife.o
 	echo "Run ./frames.csh for various tests"
 
 gameoflifememcheck: gameoflife
-	valgrind $(VGFLAGS) ./gameOfLife testInputs/JohnConway.ppm 0x1808 > studentOutputs/temp.ppm
+	valgrind $(VGFLAGS) ./gameOfLife.exe testInputs/JohnConway.ppm 0x1808 > studentOutputs/temp.ppm
 
 
 %.o: %.c
