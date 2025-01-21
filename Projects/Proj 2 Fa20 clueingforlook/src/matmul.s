@@ -11,7 +11,7 @@
 #	a3 (int*)  is the pointer to the start of m1
 # 	a4 (int)   is the # of rows (height) of m1
 #	a5 (int)   is the # of columns (width) of m1
-#	a6 (int*)  is the pointer to the the start of d
+#
 # Returns:
 #	None (void), sets d = matmul(m0, m1)
 # Exceptions:

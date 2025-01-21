@@ -21,11 +21,12 @@ classify:
     # Usage:
     #   main.s <M0_PATH> <M1_PATH> <INPUT_PATH> <OUTPUT_PATH>
 
-	# check the number of command line args
-	li t0, 5
+
+    # check the number of arg
+    li t0, 5
     bne a0, t0, exit_89
-	
-    # prologue
+
+    # Prologue
     addi sp, sp, -48
     sw ra, 0(sp)
     sw s0, 4(sp)
@@ -40,46 +41,44 @@ classify:
     sw s9, 40(sp)
     sw s10, 44(sp)
     
-    
-    
-	mv s0, a1 # argv
-    mv s1, a2 # flag
+    mv s0, a1       # s0 = argv
+    mv s10, a2      # s10 = flag
 	# =====================================
     # LOAD MATRICES
     # =====================================
     
     # Load pretrained m0
-	li a0, 8
+    li a0, 8
     jal malloc
     beq a0, x0, exit_88
-    mv s2, a0    # s2 -> m0.rows, m0.cols
-	lw a0, 4(s0) # a0 = argv[1]
-    addi a1, s2, 0
-    addi a2, s2, 4
+    mv s2, a0           # s2 -> m0.rows, m0,cols
+    mv a1, s2           
+    addi a2, s2, 4      
+    lw a0, 4(s0)
     jal read_matrix
-    mv s3, a0    # s3 -> m0
-    
+    mv s1, a0           # s1 -> M0 
+
     # Load pretrained m1
-	li a0, 8
+    li a0, 8
     jal malloc
     beq a0, x0, exit_88
-    mv s4, a0    # s4 -> m1.rows, m1.cols
-    lw a0, 8(s0) # a0 = argv[2]
-    addi a1, s4, 0
-    addi a2, s4, 4
+    mv s4, a0           # s4 -> m1.rows, m1.cols
+    mv a1, s4           
+    addi a2, s4, 4      
+    lw a0, 8(s0)
     jal read_matrix
-    mv s5, a0    # s5 -> m1
-    
+    mv s3, a0           # s3 -> M1 
+
     # Load input matrix
-	li a0, 8
+    li a0, 8
     jal malloc
     beq a0, x0, exit_88
-    mv s6, a0	  # s6 -> input.rows, input.cols
-    lw a0, 12(s0) # a0 = argv[3]
-    addi a1, s6, 0
-    addi a2, s6, 4
-	jal read_matrix
-    mv s7, a0	  # s7 -> input
+    mv s6, a0           # s6 -> INPUT_MATRIX.rows, INPUT_MATRIX.cols
+    mv a1, s6           
+    addi a2, s6, 4      
+    lw a0, 12(s0)
+    jal read_matrix
+    mv s5, a0           # s5: ptr to INPUT_MATRIX
 
     # =====================================
     # RUN LAYERS
@@ -87,78 +86,88 @@ classify:
     # 1. LINEAR LAYER:    m0 * input
     # 2. NONLINEAR LAYER: ReLU(m0 * input)
     # 3. LINEAR LAYER:    m1 * ReLU(m0 * input)
-	
-    # allocate memory for hidden layer
-    lw t0, 0(s2)
-    lw t1, 4(s6)
+
+    # allocate mem for 1st LINEAR LAYER: m0 * input
+    lw t0, 0(s2)       # t0 = M0.rows
+    lw t1, 4(s6)    # t1 = INPUT.cols
     mul a0, t0, t1
     slli a0, a0, 2
     jal malloc
     beq a0, x0, exit_88
-    mv s8, a0     # s8 -> hidden_layer
-    # hidden_layer = m0 * input
-	mv a0, s3
-	lw a1, 0(s2)
-	lw a2, 4(s2)
-	mv a3, s7
+    mv s7, a0       # s7 -> 1st LINEAR LAYER
+
+    # 1st LINEAR LAYER:    m0 * input
+    mv a0, s1
+    lw a1, 0(s2)
+    lw a2, 4(s2)
+    mv a3, s5
     lw a4, 0(s6)
-	lw a5, 4(s6)
-	mv a6, s8
-	jal matmul
-    
-    # ReLU(hidden_layer)
-	lw t0, 0(s2)
-    lw t1, 4(s6)
-    mul a1, t0, t1 # number of elements in the array
-    mv a0, s8
+    lw a5, 4(s6)
+    mv a6, s7
+    jal matmul
+
+    # NONLINEAR LAYER: ReLU(m0 * input)
+    mv a0, s7
+    lw t0, 0(s2)       # t0 = M0.rows
+    lw t1, 4(s6)    # t1 = INPUT.cols
+    mul a1, t0, t1
     jal relu
-    
-    # allocate memory for scores
-    li a0, 80
+
+    # allocate mem for 2nd LINEAR LAYER:  m1 * ReLU(m0 * input)
+    lw t0, 0(s4)       # t0 = M1.rows
+    lw t1, 4(s6)    # t1 = INPUT.cols
+    mul a0, t0, t1
+    slli a0, a0, 2
     jal malloc
     beq a0, x0, exit_88
-    mv s9, a0 # s9 -> scores
-    # scores = matmul(m1, hidden_layer)
-	mv a0, s5
+    mv s8, a0       # s8 -> 2nd LINEAR LAYER
+
+    # 2nd LINEAR LAYER:    m1 * ReLU(m0 * input)
+    mv a0, s3           # a0 = ptr to M1
     lw a1, 0(s4)
     lw a2, 4(s4)
-    mv a3, s8
-    lw a4, 0(s2)
-    lw a5, 4(s6)
-    mv a6, s9
+    mv a3, s7           # a3 = ptr to ReLU(m0 * input)
+    lw a4, 0(s2)        
+    lw a5, 4(s6)        
+    mv a6, s8
     jal matmul
+
 
     # =====================================
     # WRITE OUTPUT
     # =====================================
     # Write output matrix
-	lw a0, 16(s0) # argv[4]
-    mv a1, s9
-    lw a2, 0(s4)
-    lw a3, 4(s6)
+    lw a0, 16(s0)   # a0 = argv[4]
+    mv a1, s8
+    lw a2, 0(s4)    # rows of score 
+    lw a3, 4(s6)    # cols of score
     jal write_matrix
 
     # =====================================
     # CALCULATE CLASSIFICATION/LABEL
     # =====================================
     # Call argmax
-	mv a0, s9
-    li a1, 10
+    mv a0, s8
+    lw t0, 0(s4)
+    lw t1, 4(s6)
+    mul a1, t0, t1
     jal argmax
-	mv s10, a0 # classification
-    
-    bne s1, x0, not_print
+	mv s9, a0
+
+    bne s10, x0, not_print
     # Print classification
-    mv a1, s10
+    mv a1, s9
     jal print_int
 
     # Print newline afterwards for clarity
-	li a1 '\n'
+    li a1, '\n'
     jal print_char
-    
+
 not_print:
-	
-	mv a0, s2
+    # free the space
+    mv a0, s1
+    jal free
+    mv a0, s2
     jal free
     mv a0, s3
     jal free
@@ -172,11 +181,9 @@ not_print:
     jal free
     mv a0, s8
     jal free
+
     mv a0, s9
-    jal free
-    
-    mv a0, s10 # return classification
-    
+
     # epilogue
     lw ra, 0(sp)
     lw s0, 4(sp)
