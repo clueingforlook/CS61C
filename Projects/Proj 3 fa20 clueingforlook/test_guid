@@ -1,0 +1,8 @@
+Part A
+Task1 ALU:
+    python test_runner.py part_a alu 
+    或 
+    python test_runner.py part_a alu alu-add.circ
+
+Task2 register file:
+    python test_runner.py part_a regfile
